@@ -14,8 +14,8 @@ topics:
   - browser
 
 environment:
-  sdk: ^3.5.0
-  flutter: ">=3.24.0"
+  sdk: ^3.3.0
+  flutter: ">=3.19.0"
 
 dependencies:
   flutter:
@@ -28,7 +28,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  build_runner: ^2.4.12
+  build_runner: ^2.4.9
   generators:
     path: ../dev_packages/generators
 
