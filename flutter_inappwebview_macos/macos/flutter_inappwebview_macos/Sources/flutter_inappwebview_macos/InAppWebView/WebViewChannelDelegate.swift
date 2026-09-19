@@ -274,8 +274,9 @@ public class WebViewChannelDelegate: ChannelDelegate {
             result(true)
             break
         case .pauseTimers:
-            webView?.pauseTimers()
-            result(true)
+            webView?.pauseTimers(completionHandler: {
+                result(true)
+            })
             break
         case .resumeTimers:
             webView?.resumeTimers()

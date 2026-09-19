@@ -40,6 +40,9 @@ public class InAppWebView: WKWebView, WKUIDelegate,
     // Used to manage pauseTimers() and resumeTimers()
     var isPausedTimers = false
     var isPausedTimersCompletionHandler: (() -> Void)?
+    // Called once the pausing alert() has actually reached the JS engine and been intercepted,
+    // so callers can know timers are genuinely paused rather than just requested.
+    var isPausedTimersConfirmedHandler: (() -> Void)?
 
     var initialUserScripts: [UserScript] = []
     
@@ -1676,6 +1679,10 @@ public class InAppWebView: WKWebView, WKUIDelegate,
         
         if (isPausedTimers) {
             isPausedTimersCompletionHandler = completionHandler
+            if let confirmedHandler = isPausedTimersConfirmedHandler {
+                isPausedTimersConfirmedHandler = nil
+                confirmedHandler()
+            }
             return
         }
         
@@ -2414,11 +2421,14 @@ if(window.\(JavaScriptBridgeJS.get_JAVASCRIPT_BRIDGE_NAME())[\(_callHandlerID)] 
     }
     
     
-    public func pauseTimers() {
+    public func pauseTimers(completionHandler: (() -> Void)? = nil) {
         if !isPausedTimers {
             isPausedTimers = true
+            isPausedTimersConfirmedHandler = completionHandler
             let script = "alert();";
             self.evaluateJavaScript(script, completionHandler: nil)
+        } else {
+            completionHandler?()
         }
     }
     
@@ -2841,6 +2851,7 @@ if(window.\(JavaScriptBridgeJS.get_JAVASCRIPT_BRIDGE_NAME())[\(_callHandlerID)] 
         uiDelegate = nil
         navigationDelegate = nil
         isPausedTimersCompletionHandler = nil
+        isPausedTimersConfirmedHandler = nil
         callAsyncJavaScriptBelowMacOS11Results.removeAll()
         plugin = nil
     }
