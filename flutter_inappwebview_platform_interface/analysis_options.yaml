@@ -18,3 +18,5 @@ analyzer:
     unused_element: ignore
     unused_element_parameter: ignore
     dead_null_aware_expression: ignore
+  exclude:
+    - build/**
