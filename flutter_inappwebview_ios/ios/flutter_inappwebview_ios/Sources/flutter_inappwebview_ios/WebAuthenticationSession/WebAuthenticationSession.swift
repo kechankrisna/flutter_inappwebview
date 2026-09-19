@@ -10,7 +10,7 @@ import AuthenticationServices
 import SafariServices
 import Flutter
 
-public class WebAuthenticationSession: NSObject, ASWebAuthenticationPresentationContextProviding, Disposable {
+public class WebAuthenticationSession: NSObject, Disposable {
     static let METHOD_CHANNEL_NAME_PREFIX = "com.pichillilorenzo/flutter_webauthenticationsession_"
     var id: String
     var plugin: InAppWebViewFlutterPlugin?
@@ -89,11 +89,6 @@ public class WebAuthenticationSession: NSObject, ASWebAuthenticationPresentation
         }
     }
     
-    @available(iOS 12.0, *)
-    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        return UIApplication.shared.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
-    }
-    
     public func dispose() {
         cancel()
         channelDelegate?.dispose()
@@ -102,9 +97,17 @@ public class WebAuthenticationSession: NSObject, ASWebAuthenticationPresentation
         plugin?.webAuthenticationSessionManager?.sessions[id] = nil
         plugin = nil
     }
-    
+
     deinit {
         debugPrint("WebAuthenticationSession - dealloc")
         dispose()
+    }
+}
+
+@available(iOS 12.0, *)
+extension WebAuthenticationSession: ASWebAuthenticationPresentationContextProviding {
+    @MainActor
+    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        return UIApplication.shared.windows.first { $0.isKeyWindow } ?? ASPresentationAnchor()
     }
 }
