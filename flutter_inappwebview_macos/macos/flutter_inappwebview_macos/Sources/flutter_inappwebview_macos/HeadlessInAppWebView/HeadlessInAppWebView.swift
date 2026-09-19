@@ -14,6 +14,7 @@ public class HeadlessInAppWebView: Disposable {
     var channelDelegate: HeadlessWebViewChannelDelegate?
     var flutterWebView: FlutterWebViewController?
     var plugin: InAppWebViewFlutterPlugin?
+    var wrapperView: NSView?
     
     public init(plugin: InAppWebViewFlutterPlugin, id: String, flutterWebView: FlutterWebViewController) {
         self.id = id
@@ -43,7 +44,11 @@ public class HeadlessInAppWebView: Disposable {
             /// won't be executed sometimes.
             /// So, add the headless WKWebView to the view hierarchy.
             /// This way is also possible to take screenshots.
-            let wrapperView = NSView() // wrapper view with frame zero
+            /// The wrapper must match the webview's own frame: a zero-size wrapper around
+            /// a full-size child leaves the effective visible/composited region at zero,
+            /// which makes WKWebView's takeSnapshot return a null image.
+            let wrapperView = NSView(frame: view.frame)
+            self.wrapperView = wrapperView
             wrapperView.addSubview(view, positioned: .below, relativeTo: nil)
             NSApplication.shared.mainWindow?.contentView?.addSubview(wrapperView, positioned: .below, relativeTo: nil)
         }
@@ -53,7 +58,9 @@ public class HeadlessInAppWebView: Disposable {
         if let view = flutterWebView?.view() {
             let width = size.width == -1.0 ? NSApplication.shared.mainWindow?.contentView?.bounds.width ?? 0.0 : CGFloat(size.width)
             let height = size.height == -1.0 ? NSApplication.shared.mainWindow?.contentView?.bounds.height ?? 0.0 : CGFloat(size.height)
-            view.frame = CGRect(x: 0.0, y: 0.0, width: width, height: height)
+            let frame = CGRect(x: 0.0, y: 0.0, width: width, height: height)
+            view.frame = frame
+            wrapperView?.frame = frame
         }
     }
     
@@ -72,6 +79,8 @@ public class HeadlessInAppWebView: Disposable {
             view.alphaValue = 1.0
             // remove from parent
             view.removeFromSuperview()
+            wrapperView?.removeFromSuperview()
+            wrapperView = nil
             dispose(disposeWebView: false)
         }
         return newFlutterWebView
@@ -84,6 +93,8 @@ public class HeadlessInAppWebView: Disposable {
         plugin?.headlessInAppWebViewManager?.webViews[id] = nil
         if disposeWebView {
             flutterWebView?.dispose(removeFromSuperview: true)
+            wrapperView?.removeFromSuperview()
+            wrapperView = nil
         }
         flutterWebView = nil
         plugin = nil
