@@ -991,9 +991,14 @@ public class InAppWebView: WKWebView, UIScrollViewDelegate, WKUIDelegate,
     
     public func loadUrl(urlRequest: URLRequest, allowingReadAccessTo: URL?) {
         let url = urlRequest.url!
-        
-        if #available(iOS 9.0, *), let allowingReadAccessTo = allowingReadAccessTo, url.scheme == "file", allowingReadAccessTo.scheme == "file" {
-            loadFileURL(url, allowingReadAccessTo: allowingReadAccessTo)
+
+        if #available(iOS 9.0, *), url.scheme == "file" {
+            // Falling back to a plain load(_:) for file:// URLs would let WKWebView grant
+            // broader filesystem read access than intended. Per Apple's docs, passing the
+            // same URL for both fileURL and readAccessURL restricts access to just that file
+            // when the caller hasn't explicitly requested a wider allowingReadAccessTo.
+            let readAccessUrl = (allowingReadAccessTo?.scheme == "file") ? allowingReadAccessTo! : url
+            loadFileURL(url, allowingReadAccessTo: readAccessUrl)
         } else {
             load(urlRequest)
         }
