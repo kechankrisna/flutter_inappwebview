@@ -17,6 +17,10 @@ struct ToolbarIdentifiers {
 }
 
 public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, NSSearchFieldDelegate {
+    // Held directly rather than repeatedly re-derived via `contentViewController as? InAppBrowserWebViewController`:
+    // that cast can transiently miss during window/toolbar setup and leave a toolbar item's view nil,
+    // which AppKit treats as fatal during layout ("Expected a non-nil view or subclass override").
+    weak var webViewController: InAppBrowserWebViewController?
     var searchItem: NSToolbarItem?
     var backItem: NSToolbarItem?
     var forwardItem: NSToolbarItem?
@@ -86,7 +90,7 @@ public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, 
             
             backItem = NSToolbarItem(itemIdentifier: ToolbarIdentifiers.backButton)
             backItem?.label = ""
-            if let webViewController = contentViewController as? InAppBrowserWebViewController {
+            if let webViewController = webViewController {
                 if #available(macOS 11.0, *) {
                     backItem?.view = NSButton(image: NSImage(systemSymbolName: "chevron.left",
                                                                   accessibilityDescription: "Go Back")!,
@@ -101,7 +105,7 @@ public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, 
             
             forwardItem = NSToolbarItem(itemIdentifier: ToolbarIdentifiers.forwardButton)
             forwardItem?.label = ""
-            if let webViewController = contentViewController as? InAppBrowserWebViewController {
+            if let webViewController = webViewController {
                 if #available(macOS 11.0, *) {
                     forwardItem?.view = NSButton(image: NSImage(systemSymbolName: "chevron.right",
                                                                   accessibilityDescription: "Go Forward")!,
@@ -116,7 +120,7 @@ public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, 
             
             reloadItem = NSToolbarItem(itemIdentifier: ToolbarIdentifiers.reloadButton)
             reloadItem?.label = ""
-            if let webViewController = contentViewController as? InAppBrowserWebViewController {
+            if let webViewController = webViewController {
                 if #available(macOS 11.0, *) {
                     reloadItem?.view = NSButton(image: NSImage(systemSymbolName: "arrow.counterclockwise",
                                                                   accessibilityDescription: "Reload")!,
@@ -152,7 +156,7 @@ public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, 
                         } else {
                             let actionItem = NSMenuToolbarItem(itemIdentifier: NSToolbarItem.Identifier(rawValue: String(item.id)))
                             actionItem.label = ""
-                            if let webViewController = contentViewController as? InAppBrowserWebViewController {
+                            if let webViewController = webViewController {
                                 let actionButton = NSButton(title: item.title,
                                                            target: webViewController,
                                                            action: #selector(InAppBrowserWebViewController.onMenuItemClicked))
@@ -274,7 +278,7 @@ public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, 
             }
             
             let request = URLRequest(url: url)
-            (contentViewController as? InAppBrowserWebViewController)?.webView?.load(request)
+            webViewController?.webView?.load(request)
             
             return true
         }
@@ -350,7 +354,7 @@ public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, 
     }
     
     @objc func onMainWindowWillClose(_ notification: Notification) {
-        if let webViewController = contentViewController as? InAppBrowserWebViewController {
+        if let webViewController = webViewController {
             webViewController.channelDelegate?.onMainWindowWillClose()
         }
     }
@@ -360,7 +364,7 @@ public class InAppBrowserWindow: NSWindow, NSWindowDelegate, NSToolbarDelegate, 
         NotificationCenter.default.removeObserver(self,
                                                   name: NSWindow.willCloseNotification,
                                                   object: NSApplication.shared.mainWindow)
-        if let webViewController = contentViewController as? InAppBrowserWebViewController {
+        if let webViewController = webViewController {
             webViewController.dispose()
         }
         if #available(macOS 11.0, *) {

@@ -79,6 +79,7 @@ public class InAppBrowserManager: ChannelDelegate {
         let window = InAppBrowserWindow(contentViewController: webViewController)
         window.browserSettings = browserSettings
         window.contentViewController = webViewController
+        window.webViewController = webViewController
         for menuItem in menuItems {
             window.menuItems.append(InAppBrowserMenuItem.fromMap(map: menuItem)!)
         }
